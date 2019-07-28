@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset='utf-8' />
+  <title>Movie Genre-ator</title>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
+  <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+
+  <script src="vue.js"></script>
+
+
+  <!-- <script src="https://www.gstatic.com/firebasejs/6.3.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/6.3.1/firebase-firestore.js"></script>
+
+
+  <script src="https://cdn.firebase.com/libs/firebaseui/3.5.2/firebaseui.js"></script>
+  <link type="text/css" rel="stylesheet" href="https://cdn.firebase.com/libs/firebaseui/3.5.2/firebaseui.css" />
+
+  <script src="https://www.gstatic.com/firebasejs/6.3.1/firebase.js"></script>
+   -->
+
+  <script type="text/javascript">
+    // // Initialize the FirebaseUI Widget using Firebase.
+    // var ui = new firebaseui.auth.AuthUI(firebase.auth());
+    // // The start method will wait until the DOM is loaded.
+    // ui.start('#firebaseui-auth-container', uiConfig);
+  </script>
+
+  <!-- <script>
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCfgDYZYofYCoV1-u8iS75cqoijMbzNnjQ",
+      authDomain: "rugby-ai-247815.firebaseapp.com",
+      databaseURL: "https://rugby-ai-247815.firebaseio.com",
+      projectId: "rugby-ai-247815",
+      storageBucket: "rugby-ai-247815.appspot.com",
+      messagingSenderId: "1098478432496",
+      appId: "1:1098478432496:web:fb8f55c770250976"
+    };
+
+    firebase.initializeApp( firebaseConfig )
+
+    var auth = firebase.auth();
+
+    var provider = new firebase.auth.GoogleAuthProvider();
+    provider.addScope('https://www.googleapis.com/auth/contacts.readonly');
+    var user = null
+
+    firebase.auth().signInWithPopup(provider).then(function (result) {
+      // This gives you a Google Access Token. You can use it to access the Google API.
+      var token = result.credential.accessToken;
+      // The signed-in user info.
+      user = result.user;
+      // ...
+    }).catch(function (error) {
+      // Handle Errors here.
+      var errorCode = error.code;
+      var errorMessage = error.message;
+      // The email of the user's account used.
+      var email = error.email;
+      // The firebase.auth.AuthCredential type that was used.
+      var credential = error.credential;
+      // ...
+    });
+
+    // firebase.initializeApp({
+    //   apiKey: 'AIzaSyCfgDYZYofYCoV1-u8iS75cqoijMbzNnjQ',
+    //   authDomain: "rugby-ai-247815.firebaseapp.com",
+    //   projectId: 'rugby-ai-247815'
+    // });
+
+    var db = firebase.firestore();
+    var vid = null;
+
+    db.collection("rugby-video-annotations").get().then((querySnapshot) => {
+      querySnapshot.forEach((doc) => {
+        console.log(`${doc.id} => ${doc.data()}`);
+        vid = doc
+      });
+    });
+  </script> -->
+
+  <style>
+    #commentsContainer {
+      padding: 50px;
+    }
+
+    #commentTimeLine {
+      border: #fe4080 4px solid;
+      border-radius: 10px;
+      width: 100%;
+    }
+
+    .comment {
+      position: absolute;
+      border: green solid 3px;
+      top: -13px;
+      border-radius: 50px;
+      height: 20px;
+      left: 80%;
+      cursor: pointer;
+    }
+
+    .comment.good {
+      border: green solid 3px;
+    }
+
+    .comment.bad {
+      border: red solid 3px;
+    }
+
+    #commentTimeLine {
+      position: relative;
+    }
+  </style>
+
+</head>
+
+<body>
+
+
+  <!-- Always shows a header, even in smaller screens. -->
+  <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header">
+    <header class="mdl-layout__header">
+
+      <div class="mdl-layout-icon">
+        <i class="material-icons" style="font-size: 2.2em;">movie_filter</i>
+      </div>
+
+      <div class="mdl-layout__header-row">
+        <!-- Title -->
+
+
+        <span class="mdl-layout-title">Rugby Sight</span>
+
+      </div>
+    </header>
+    <main class="mdl-layout__content">
+
+      <div class="page-content">
+        <!-- Your content goes here -->
+
+        <div class="mdl-grid">
+          <div id="player"></div>
+        </div>
+
+        <div id="addBtnContainer" class="mdl-grid">
+          <!-- Colored FAB button with ripple -->
+
+          <button onclick="newBtnClick()"
+            class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
+            <i class="material-icons">add</i>
+          </button>
+        </div>
+
+
+        <div id="commentContainer" class="mdl-grid" hidden>
+          <div style="margin: 0 auto;">
+            <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+              <input class="mdl-textfield__input" type="text" id="comment">
+              <label class="mdl-textfield__label" for="comment">Comment about play...</label>
+            </div>
+
+            <i onclick="cancelComment()" style="cursor: pointer" class="material-icons">highlight_off</i>
+          </div>
+
+
+        </div>
+
+      </div>
+      <div id="commentsContainer" class="mdl-grid">
+        <div id="commentTimeLine">
+          <comment v-for="comment in comments" v-bind:key="comment.id" v-bind:comment="comment"></comment>
+        </div>
+      </div>
+
+      <div id="firebaseui-auth-container"></div>
+
+
+
+
+  </div>
+  </main>
+
+  </div>
+
+
+  <script>
+
+    Vue.component('comment', {
+      props: ['comment'],
+      template: `<span class="comment"  
+                      v-bind:style="good_bad_color"
+                      v-on:click="seek_to_comment(comment)"
+                      v-bind:class="good_bad_class">
+                      </span>`,
+      methods: {
+        seek_to_comment: function (comment) {
+          console.log("going to " + comment.pos)
+          jumpTo(comment.pos)
+        }
+      },
+      computed: {
+        good_bad_color: function(){
+          const hue = ((this.comment.sentiment/2)+0.5)*120
+          return {"border-color":'hsl('+hue+', 100%, 40%)',
+                  "left": this.comment.pos.toString() + '%'}
+        },
+        good_bad_class: function () {
+          return {
+            good: this.comment.sentiment >= 0,
+            bad: this.comment.sentiment < 0
+          }
+        }
+      }
+    })
+
+    var comments = [{ "text": "something somthing", "pos": 10, "id": 1, "sentiment": 0.0  },
+    { "text": "something somthing", "pos": 30, "id": 2, "sentiment": 0.0 },
+    { "text": "something somthing", "pos": 90, "id": 3, "sentiment": -0.9 },
+    { "text": "something somthing", "pos": 40, "id": 5, "sentiment": 0.6 }]
+
+    var app = new Vue({
+      el: '#commentTimeLine',
+      data: {
+        comments: comments
+      },
+      methods: {
+        remove_comment: function (comment) {
+          console.log("removing " + comment.id)
+          remove_from_array(comment, this.comments)
+        }
+      }
+    })
+
+    function remove_from_array(item, array) {
+      for (var i = 0; i < array.length; i++) {
+        if (array[i].id == item.id) {
+          array.splice(i, 1)
+          break
+        }
+      }
+    }
+
+
+
+    var commentInput = document.getElementById('comment');
+    var commentInputConatiner = document.getElementById('commentContainer');
+    var addBtnContainer = document.getElementById('addBtnContainer');
+    var commentTimeLine = document.getElementById('commentTimeLine')
+
+
+    function newBtnClick() {
+      player.pauseVideo();
+
+      addBtnContainer.hidden = true
+      commentInputConatiner.hidden = false
+
+      commentInput.focus()
+    }
+
+
+    function cancelComment() {
+      addBtnContainer.hidden = false
+      commentInputConatiner.hidden = true
+
+      commentInput.value = ""
+    }
+
+    PRE_EVENT_BUFFER = 5
+
+    commentInput.addEventListener("keyup", function (event) {
+      // Number 13 is the "Enter" key on the keyboard
+      if (event.keyCode === 13) {
+        // Cancel the default action, if needed
+        event.preventDefault();
+        // Trigger the button element with a click
+        saveComment(commentInput.value, player.getCurrentTime() - PRE_EVENT_BUFFER)
+      }
+    });
+
+
+
+    function saveComment(text, time) {
+
+      player.playVideo();
+
+      var comment = { 'text': text }
+      comment.pos = (time / player.getDuration()) * 100
+      comment.time = time
+
+      console.log("Comment saved " + text + " " + time.toString())
+      console.log(comments)
+      cancelComment()
+      comments.push(comment)
+      console.log(comments)
+      // addCommentToTimeLine(comment)
+
+    }
+
+    // function addCommentToTimeLine(comment) {
+
+    //   var commentHTML = `<span onclick="jumpTo(this)" class="comment" style="left:${comment.pos}" data-comment="${comment.text}" data-time="${comment.time}"></span>`
+    //   commentTimeLine.insertAdjacentHTML('beforeend', commentHTML);
+    // }
+
+    function jumpTo(pos) {
+      console.log(comment)
+      const seconds = (pos / 100) * player.getDuration()
+      player.seekTo(seconds)
+    }
+
+
+    // 2. This code loads the IFrame Player API code asynchronously.
+    var tag = document.createElement('script');
+
+    tag.src = "https://www.youtube.com/iframe_api";
+    var firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+    // 3. This function creates an <iframe> (and YouTube player)
+    //    after the API code downloads.
+    var player;
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player('player', {
+        height: '390',
+        width: '640',
+        videoId: 'wILY6cSw9dk',
+        events: {
+          'onReady': onPlayerReady,
+          'onStateChange': onPlayerStateChange
+        },
+        playerVars: { rel: 0, showinfo: 0, ecver: 2 }
+      });
+    }
+
+    // 4. The API will call this function when the video player is ready.
+    function onPlayerReady(event) {
+      event.target.playVideo();
+    }
+
+    // 5. The API calls this function when the player's state changes.
+    //    The function indicates that when playing a video (state=1),
+    //    the player should play for six seconds and then stop.
+    var done = false;
+    function onPlayerStateChange(event) {
+      if (event.data == YT.PlayerState.PLAYING && !done) {
+        setTimeout(stopVideo, 6000);
+        done = true;
+      }
+    }
+    function stopVideo() {
+      player.stopVideo();
+    }
+  </script>
+
+</body>
+
+</html>
