@@ -13,7 +13,7 @@
   <script src="vue.js"></script>
 
 
-  <!-- <script src="https://www.gstatic.com/firebasejs/6.3.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/6.3.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/6.3.1/firebase-firestore.js"></script>
 
 
@@ -21,7 +21,7 @@
   <link type="text/css" rel="stylesheet" href="https://cdn.firebase.com/libs/firebaseui/3.5.2/firebaseui.css" />
 
   <script src="https://www.gstatic.com/firebasejs/6.3.1/firebase.js"></script>
-   -->
+
 
   <script type="text/javascript">
     // // Initialize the FirebaseUI Widget using Firebase.
@@ -30,7 +30,7 @@
     // ui.start('#firebaseui-auth-container', uiConfig);
   </script>
 
-  <!-- <script>
+  <script>
 
     const firebaseConfig = {
       apiKey: "AIzaSyCfgDYZYofYCoV1-u8iS75cqoijMbzNnjQ",
@@ -42,30 +42,30 @@
       appId: "1:1098478432496:web:fb8f55c770250976"
     };
 
-    firebase.initializeApp( firebaseConfig )
+    firebase.initializeApp(firebaseConfig)
 
-    var auth = firebase.auth();
+    // var auth = firebase.auth();
 
-    var provider = new firebase.auth.GoogleAuthProvider();
-    provider.addScope('https://www.googleapis.com/auth/contacts.readonly');
-    var user = null
+    // var provider = new firebase.auth.GoogleAuthProvider();
+    // provider.addScope('https://www.googleapis.com/auth/contacts.readonly');
+    // var user = null
 
-    firebase.auth().signInWithPopup(provider).then(function (result) {
-      // This gives you a Google Access Token. You can use it to access the Google API.
-      var token = result.credential.accessToken;
-      // The signed-in user info.
-      user = result.user;
-      // ...
-    }).catch(function (error) {
-      // Handle Errors here.
-      var errorCode = error.code;
-      var errorMessage = error.message;
-      // The email of the user's account used.
-      var email = error.email;
-      // The firebase.auth.AuthCredential type that was used.
-      var credential = error.credential;
-      // ...
-    });
+    // firebase.auth().signInWithPopup(provider).then(function (result) {
+    //   // This gives you a Google Access Token. You can use it to access the Google API.
+    //   var token = result.credential.accessToken;
+    //   // The signed-in user info.
+    //   user = result.user;
+    //   // ...
+    // }).catch(function (error) {
+    //   // Handle Errors here.
+    //   var errorCode = error.code;
+    //   var errorMessage = error.message;
+    //   // The email of the user's account used.
+    //   var email = error.email;
+    //   // The firebase.auth.AuthCredential type that was used.
+    //   var credential = error.credential;
+    //   // ...
+    // });
 
     // firebase.initializeApp({
     //   apiKey: 'AIzaSyCfgDYZYofYCoV1-u8iS75cqoijMbzNnjQ',
@@ -80,9 +80,20 @@
       querySnapshot.forEach((doc) => {
         console.log(`${doc.id} => ${doc.data()}`);
         vid = doc
+        db.collection("rugby-video-annotations").doc(vid.id)
+          .onSnapshot(function (doc) {
+            var source = doc.metadata.hasPendingWrites ? "Local" : "Server";
+            console.log(source, " data: ", doc.data());
+            vid = doc
+          });
+
       });
     });
-  </script> -->
+
+
+
+
+  </script>
 
   <style>
     #commentsContainer {
@@ -195,20 +206,22 @@
       props: ['comment'],
       template: `<span class="comment"  
                       v-bind:style="good_bad_color"
-                      v-on:click="seek_to_comment(comment)"
+                      v-on:click="seek_to_comment()"
                       v-bind:class="good_bad_class">
                       </span>`,
       methods: {
-        seek_to_comment: function (comment) {
-          console.log("going to " + comment.pos)
-          jumpTo(comment.pos)
+        seek_to_comment: function (e) {
+          console.log("going to " + this.comment.pos)
+          jumpTo(this.comment.pos)
         }
       },
       computed: {
-        good_bad_color: function(){
-          const hue = ((this.comment.sentiment/2)+0.5)*120
-          return {"border-color":'hsl('+hue+', 100%, 40%)',
-                  "left": this.comment.pos.toString() + '%'}
+        good_bad_color: function () {
+          const hue = ((this.comment.sentiment / 2) + 0.5) * 120
+          return {
+            "border-color": 'hsl(' + hue + ', 100%, 40%)',
+            "left": this.comment.pos.toString() + '%'
+          }
         },
         good_bad_class: function () {
           return {
@@ -219,7 +232,7 @@
       }
     })
 
-    var comments = [{ "text": "something somthing", "pos": 10, "id": 1, "sentiment": 0.0  },
+    var comments = [{ "text": "something somthing", "pos": 10, "id": 1, "sentiment": 0.0 },
     { "text": "something somthing", "pos": 30, "id": 2, "sentiment": 0.0 },
     { "text": "something somthing", "pos": 90, "id": 3, "sentiment": -0.9 },
     { "text": "something somthing", "pos": 40, "id": 5, "sentiment": 0.6 }]
