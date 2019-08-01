@@ -175,7 +175,7 @@
       computed: {
         good_bad_color: function () {
           var hue = 216
-          if (this.comment.sentiment){
+          if (this.comment.sentiment) {
             hue = ((this.comment.sentiment / 2) + 0.5) * 120
           }
 
@@ -209,8 +209,17 @@
       },
       computed: {
         comments: function () {
-          if (this.videos[0])
-            return this.videos[0].annotations
+
+          // clean this up
+          if (this.videos[0]) {
+            var comment_data = []
+            // convert map to list, (or change code down the line to process maps)
+            for (const [id, stuff] of Object.entries(this.videos[0].comments_map)) {
+              stuff["id"] = id
+              comment_data.push(stuff)
+            }
+            return comment_data
+          }
           else
             return []
         }
