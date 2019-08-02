@@ -16,6 +16,10 @@
   <script src="vue.js"></script>
   <script src="https://unpkg.com/vuefire/dist/vuefire.js"></script>
 
+  <script src="https://cdn.firebase.com/libs/firebaseui/4.1.0/firebaseui.js"></script>
+  <link type="text/css" rel="stylesheet" href="https://cdn.firebase.com/libs/firebaseui/4.1.0/firebaseui.css" />
+
+
 
   <style>
     #commentsContainer {
@@ -30,7 +34,7 @@
 
     .comment {
       position: absolute;
-      border: blue solid 3px;
+      border: blue solid 2px;
       top: -13px;
       border-radius: 50px;
       height: 20px;
@@ -40,11 +44,11 @@
     }
 
     .comment.good {
-      border: green solid 3px;
+      border-color: green
     }
 
     .comment.bad {
-      border: red solid 3px;
+      border-color: red
     }
 
     #commentTimeLine {
@@ -123,6 +127,14 @@
 
   <script>
 
+
+
+
+
+
+
+
+
     Vue.use(Vuefire.firestorePlugin)
 
     const firebaseConfig = {
@@ -139,6 +151,35 @@
 
     var db = firebase.firestore();
     db.settings({ timestampsInSnapshots: true });
+
+
+    var uiConfig = {
+      signInSuccessUrl: '/index-vue-fire.html',
+      signInOptions: [
+        // Leave the lines as is for the providers you want to offer your users.
+        firebase.auth.GoogleAuthProvider.PROVIDER_ID,
+      ],
+      // tosUrl and privacyPolicyUrl accept either url string or a callback
+      // function.
+      // Terms of service url/callback.
+      tosUrl: 'file:///Users/zackakil/Desktop/app/index-vue-fire.html',
+      // Privacy policy url/callback.
+      privacyPolicyUrl: function () {
+        window.location.assign('file:///Users/zackakil/Desktop/app/index-vue-fire.html');
+      }
+    };
+
+    // Initialize the FirebaseUI Widget using Firebase.
+    var ui = new firebaseui.auth.AuthUI(firebase.auth());
+    // The start method will wait until the DOM is loaded.
+    ui.start('#firebaseui-auth-container', uiConfig);
+
+
+
+
+
+
+
 
     var vid = null;
 
@@ -175,7 +216,7 @@
       computed: {
         good_bad_color: function () {
           var hue = 216
-          if (this.comment.sentiment) {
+          if (this.comment.sentiment != null) {
             hue = ((this.comment.sentiment / 2) + 0.5) * 120
           }
 
@@ -214,7 +255,7 @@
           if (this.videos[0]) {
             var comment_data = []
             // convert map to list, (or change code down the line to process maps)
-            for (const [id, stuff] of Object.entries(this.videos[0].comments_map)) {
+            for (const [id, stuff] of Object.entries(this.videos[0].annotations)) {
               stuff["id"] = id
               comment_data.push(stuff)
             }
@@ -273,16 +314,26 @@
 
       player.playVideo();
 
-      var comment = { 'text': text }
+      var comment = {}
+      comment.text = text
       comment.pos = (time / player.getDuration()) * 100
-      comment.time = time
+      comment.sentiment = null
 
-      console.log("Comment saved " + text + " " + time.toString())
-      console.log(comments)
+      console.log("Saving comment " + comment)
       cancelComment()
-      comment_data.push(comment)
-      console.log(comments)
+
+      // To update age and favorite color:
+      db.collection("rugby-video-annotations").doc("wS3PlEjY7yemLdjaSOu2").update({
+        [`annotations.${new_id()}`]: comment
+      })
+        .then(function () {
+          console.log("Document successfully updated!");
+        });
     }
+
+    function new_id () {
+      return Math.random().toString(36).substr(2, 7);
+    };
 
     function jumpTo(pos) {
       console.log(comment)
@@ -308,27 +359,26 @@
         videoId: 'wILY6cSw9dk',
         events: {
           'onReady': onPlayerReady,
-          'onStateChange': onPlayerStateChange
         },
         playerVars: { rel: 0, showinfo: 0, ecver: 2 }
       });
     }
 
-    // 4. The API will call this function when the video player is ready.
+    // // 4. The API will call this function when the video player is ready.
     function onPlayerReady(event) {
       event.target.playVideo();
     }
 
-    // 5. The API calls this function when the player's state changes.
-    //    The function indicates that when playing a video (state=1),
-    //    the player should play for six seconds and then stop.
-    var done = false;
-    function onPlayerStateChange(event) {
-      if (event.data == YT.PlayerState.PLAYING && !done) {
-        setTimeout(stopVideo, 6000);
-        done = true;
-      }
-    }
+    // // 5. The API calls this function when the player's state changes.
+    // //    The function indicates that when playing a video (state=1),
+    // //    the player should play for six seconds and then stop.
+    // var done = false;
+    // function onPlayerStateChange(event) {
+    //   if (event.data == YT.PlayerState.PLAYING && !done) {
+    //     setTimeout(stopVideo, 6000);
+    //     done = true;
+    //   }
+    // }
     function stopVideo() {
       player.stopVideo();
     }
