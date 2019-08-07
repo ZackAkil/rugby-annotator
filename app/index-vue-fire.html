@@ -8,7 +8,7 @@
 
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
   <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
-  <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+  <script src="https://code.getmdl.io/1.3.0/material.min.js"></script>
 
 
   <!-- firebase and vue -->
@@ -24,12 +24,25 @@
   <style>
     #commentsContainer {
       padding: 15px;
+      margin: 60px 0;
     }
 
     #commentTimeLine {
       border: #fe4080 4px solid;
       border-radius: 10px;
       width: 100%;
+      cursor: pointer;
+    }
+
+    #commentTimeLineDot {
+      background-color: white;
+      height: 8px;
+      width: 8px;
+      position: absolute;
+      border-radius: 50%;
+      top: -4px;
+      left: 0px;
+      z-index: 1;
     }
 
     .comment {
@@ -54,6 +67,10 @@
     #commentTimeLine {
       position: relative;
     }
+
+    #firebaseui-auth-container{
+      margin: 60px 0;
+    }
   </style>
 
 </head>
@@ -70,12 +87,10 @@
       </div>
 
       <div class="mdl-layout__header-row">
-
-
         <span class="mdl-layout-title">Sport Sight</span>
-
       </div>
     </header>
+
     <main class="mdl-layout__content">
 
       <div class="page-content">
@@ -84,14 +99,21 @@
           <div id="player"></div>
         </div>
 
-        <div id="addBtnContainer" class="mdl-grid">
 
+
+        <div id="commentsContainer" class="mdl-grid">
+          <div id="commentTimeLine">
+            <span id="commentTimeLineDot" v-bind:style="{left:currentTime+'%'}"></span>
+            <comment v-for="comment in comments" v-bind:key="comment.id" v-bind="comment"></comment>
+          </div>
+        </div>
+
+        <div id="addBtnContainer" class="mdl-grid">
           <button onclick="newBtnClick()"
-            class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
+            class="mdl-button  mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
             <i class="material-icons">add</i>
           </button>
         </div>
-
 
         <div id="commentContainer" class="mdl-grid" hidden>
           <div style="margin: 0 auto;">
@@ -99,29 +121,17 @@
               <input class="mdl-textfield__input" type="text" id="comment">
               <label class="mdl-textfield__label" for="comment">Comment about play...</label>
             </div>
-
             <i onclick="cancelComment()" style="cursor: pointer" class="material-icons">highlight_off</i>
           </div>
         </div>
 
+        <div id="firebaseui-auth-container"></div>
       </div>
-      <div id="commentsContainer" class="mdl-grid">
-        <div id="commentTimeLine">
-          <comment v-for="comment in comments" v-bind:key="comment.id" v-bind:comment="comment"></comment>
-        </div>
-      </div>
-
-      <div id="firebaseui-auth-container"></div>
-
-
-  </div>
-  </main>
-
+    </main>
   </div>
 
 
   <script>
-
 
     Vue.use(Vuefire.firestorePlugin)
 
@@ -164,36 +174,71 @@
 
 
 
-
     Vue.component('comment', {
-      props: ['comment'],
-      template: `<span class="comment"  
+      props: {
+        id: { type: String, required: true },
+        pos: { type: Number, required: true },
+        sentiment: { required: true },
+        text: { type: String, required: true },
+        show: { type: Boolean, required: true },
+      },
+      template: `<span class="comment-tooltip">
+                      <span v-bind:id="id" class="comment"  
                       v-bind:style="good_bad_color"
                       v-on:click="seek_to_comment()"
                       v-bind:class="good_bad_class">
-                      </span>`,
+                      </span>
+                      <div class="mdl-tooltip mdl-tooltip--top mdl-tooltip--large" 
+                           v-bind:data-mdl-for="id"
+                           v-bind:class="{ 'is-active': show }">
+                           {{text}}
+                      </div>
+                  </span>`,
       methods: {
         seek_to_comment: function (e) {
-          console.log("going to " + this.comment.pos)
-          jumpTo(this.comment.pos)
+          console.log("going to " + this.pos)
+          jumpTo(this.pos)
         }
+      },
+      mounted: function () {
+        // super incredibly ugly code for rendering the tool tips in right location
+        var list = document.getElementsByClassName('comment-tooltip')
+        for (let item of list) {
+          tooltipInifunction(item)
+        }
+        function tooltipInifunction(element) {
+          var props = element.children[0].getBoundingClientRect();
+          var left = props.left + props.width / 2;
+          var top = props.top + props.height / 2;
+          var marginLeft = -1 * (element.children[1].offsetWidth / 2);
+          var marginTop = -1 * (element.children[1].offsetHeight / 2);
+
+          if (left + marginLeft < 0) {
+            element.children[1].style.left = '0';
+            element.children[1].style.marginLeft = '0';
+          } else {
+            element.children[1].style.left = left + 'px';
+            element.children[1].style.marginLeft = marginLeft + 'px';
+          }
+          element.children[1].style.top = props.top - element.children[1].offsetHeight - 10 + 'px';
+        };
       },
       computed: {
         good_bad_color: function () {
           var hue = 216
-          if (this.comment.sentiment != null) {
-            hue = ((this.comment.sentiment / 2) + 0.5) * 120
+          if (this.sentiment != null) {
+            hue = ((this.sentiment / 2) + 0.5) * 120
           }
 
           return {
             "border-color": 'hsl(' + hue + ', 100%, 40%)',
-            "left": this.comment.pos.toString() + '%'
+            "left": this.pos.toString() + '%'
           }
         },
         good_bad_class: function () {
           return {
-            good: this.comment.sentiment >= 0,
-            bad: this.comment.sentiment < 0
+            good: this.sentiment >= 0,
+            bad: this.sentiment < 0
           }
         }
       }
@@ -203,6 +248,7 @@
       el: '#commentTimeLine',
       data: {
         videos: [],
+        currentTime: 0
       },
       firestore: {
         videos: db.collection("rugby-video-annotations"),
@@ -210,7 +256,7 @@
       methods: {
         remove_comment: function (comment) {
           console.log("removing " + comment.id)
-          remove_from_array(comment, this.videos)
+
         }
       },
       computed: {
@@ -222,8 +268,10 @@
             // convert map to list, (or change code down the line to process maps)
             for (const [id, stuff] of Object.entries(this.videos[0].annotations)) {
               stuff["id"] = id
+              stuff["show"] = false
               comment_data.push(stuff)
             }
+            comment_data.sort((a, b) => (a.pos > b.pos) ? 1 : -1)
             return comment_data
           }
           else
@@ -231,16 +279,6 @@
         }
       }
     })
-
-    function remove_from_array(item, array) {
-      for (var i = 0; i < array.length; i++) {
-        if (array[i].id == item.id) {
-          array.splice(i, 1)
-          break
-        }
-      }
-    }
-
 
     var commentInput = document.getElementById('comment');
     var commentInputConatiner = document.getElementById('commentContainer');
@@ -270,7 +308,7 @@
         // Cancel the default action, if needed
         event.preventDefault();
         // Trigger the button element with a click
-        if (commentInput.value.trim()){
+        if (commentInput.value.trim()) {
           saveComment(commentInput.value, player.getCurrentTime() - PRE_EVENT_BUFFER)
         }
         cancelComment()
@@ -280,8 +318,6 @@
 
 
     function saveComment(text, time) {
-
-      
 
       var comment = {}
       comment.text = text
@@ -299,7 +335,7 @@
         });
     }
 
-    function new_id () {
+    function new_id() {
       return Math.random().toString(36).substr(2, 7);
     };
 
@@ -307,6 +343,7 @@
       console.log(comment)
       const seconds = (pos / 100) * player.getDuration()
       player.seekTo(seconds)
+      player.playVideo()
     }
 
 
@@ -335,11 +372,35 @@
     // // 4. The API will call this function when the video player is ready.
     function onPlayerReady(event) {
       event.target.playVideo();
+
+      setInterval(function () {
+        const currTime = player.getCurrentTime() / player.getDuration()
+        const currPos = app.currentTime = (currTime * 100) - 0.1
+        showCommentAtCurrentPos(currPos)
+
+      }, 200);
     }
 
     function stopVideo() {
       player.stopVideo();
     }
+
+    function showCommentAtCurrentPos(pos) {
+
+      app.comments.forEach(function (element) {
+
+        // console.log(Math.abs(pos - element.pos));
+        const deltaSeconds = Math.abs((pos - element.pos) * player.getDuration()) / 100
+        if (deltaSeconds < 3) {
+          element.show = true;
+        } else if (deltaSeconds < 4) {
+          element.show = false;
+        }
+      });
+    }
+
+
+
   </script>
 
 </body>
